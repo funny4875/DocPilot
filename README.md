@@ -1,10 +1,10 @@
-# 公文小幫手：第一版多帳號登入
+# DocPilot 公文小幫手
 
 雙擊 `啟動多帳號登入.bat`，新增帳號與密碼，或從下拉選單選擇已儲存的帳號，再按「登入」。登入成功後 Chrome 會保持開啟，關閉介面時會關閉 Chrome。
 
 帳密以 Windows DPAPI 加密保存在 `accounts.dpapi`，只有目前的 Windows 使用者可解密。首次啟動會匯入舊的 `temp.txt` 與 `temp - 複製.txt`；確認加密檔可讀後刪除這兩個明文檔。若兩檔有相同帳號但不同密碼，會停止匯入並保留明文檔，供人工核對。
 
-登入曾經實際驗證；新增的公文操作與腳本功能仍需在正式網站確認。舊的 `執行公告週知.bat` 是既有獨立流程。電腦需有 Chrome，以及含 Selenium、ddddocr、pywin32 的 Python；啟動器優先使用資料夾內 `.venv`，其次使用 Thonny Python。
+登入曾經實際驗證；新增的公文操作與腳本功能仍需在正式網站確認。電腦需有 Chrome，以及含 Selenium、ddddocr、pywin32 的 Python；啟動器優先使用資料夾內 `.venv`，其次使用 Thonny Python。
 
 ## 公文操作與腳本
 
