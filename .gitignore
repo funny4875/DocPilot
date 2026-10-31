@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+accounts.dpapi
+accounts.dpapi.*
+pin.txt
+temp.txt
+temp - 複製.txt
+cloudop_captcha*.png
+cloudop_login_screenshot*.png
+*.bak*
+backup-*/

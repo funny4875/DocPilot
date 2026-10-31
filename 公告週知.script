@@ -1,0 +1,20 @@
+{"name": "下載文件", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[2]/button[9]/i[1]"}
+{"name": "文書檔案", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/header[1]/div[2]/div[1]/button[1]/span[1]"}
+{"name": "新增", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/header[1]/div[2]/div[1]/div[1]/a[1]"}
+{"name": "簡簽", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/table[1]/tbody[1]/tr[2]/td[4]/div[1]"}
+{"name": "新增(click)", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[2]/button[1]"}
+{"name": "點擬辦第一項", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[1]/div[1]/div[4]/div[1]/div[2]/div[1]/div[2]"}
+{"name": "擬公告週知", "action": "paste", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[1]/div[1]/div[4]/div[1]/div[2]/div[1]/div[2]", "value": "擬公告週知。"}
+{"name": "簽章", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[3]/div[1]/div[1]/div[2]/div[2]/div[2]/button[2]"}
+{"name": "確認…", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[3]/button[1]"}
+{"name": "技術服務", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[2]/table[1]/tbody[1]/tr[3]/td[2]/div[1]"}
+{"name": "確認", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[3]/button[1]"}
+{"name": "簽章", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[3]/div[1]/div[1]/div[2]/div[2]/div[2]/button[2]/i[1]"}
+{"name": "流程範本", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/button[1]"}
+{"name": "範本1", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/table[1]/tbody[1]/tr[1]/td[3]/button[1]"}
+{"name":"等待 2 秒","action":"wait","seconds":2}
+{"name":"等待送出",","action":"wait_for","xpath":"/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/button[1]","timeout":10}
+{"name": "送出", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/button[1]"}
+{"name":"等待 2 秒","action":"wait","seconds":2}
+{"name":"等待next",","action":"wait_for","xpath":"/html[1]/body[1]/div[2]/div[1]/div[3]/button[3]","timeout":10}
+{"name": "next", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[3]/button[3]"}

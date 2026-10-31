@@ -1,0 +1,7 @@
+{"name": "簽章", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[3]/div[1]/div[1]/div[2]/div[2]/div[2]/button[2]", "timeout": 5}
+{"name": "送出", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/button[1]", "timeout": 10}
+{"name": "點程pin框", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "timeout": 5}
+{"name": "清空pin框", "action": "clear", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "timeout": 5}
+{"name": "輸入pin", "action": "send_keys", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "${PIN}", "timeout": 5}
+{"name": "enter確認", "action": "key", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "ENTER", "timeout": 5}
+{"name": "下一筆", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[3]/button[3]", "timeout": 20}
