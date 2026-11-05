@@ -1,5 +1,4 @@
 import json
-import ctypes
 import math
 import time
 
@@ -10,7 +9,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
-FOLDER = Path(__file__).resolve().parent
+from app_paths import DATA_DIR
+FOLDER = DATA_DIR
 RECORDER = r'''(() => {
  if (window.__docRecorder) return;
  window.__docRecorder = true; window.__docRecording = true;
@@ -123,70 +123,15 @@ def run_script(driver, content, count=1, pin=None, timeout=5, progress=None, sta
 
 
 def paste_text(element, value):
-    """Save clipboard data before temporarily replacing it with paste text."""
-    user32 = ctypes.windll.user32
-    kernel = ctypes.windll.kernel32
-    kernel.GlobalSize.argtypes = [ctypes.c_void_p]
-    kernel.GlobalSize.restype = ctypes.c_size_t
-    kernel.GlobalLock.argtypes = [ctypes.c_void_p]
-    kernel.GlobalLock.restype = ctypes.c_void_p
-    kernel.GlobalUnlock.argtypes = [ctypes.c_void_p]
-    kernel.GlobalAlloc.argtypes = [ctypes.c_uint, ctypes.c_size_t]
-    kernel.GlobalAlloc.restype = ctypes.c_void_p
-    kernel.GlobalFree.argtypes = [ctypes.c_void_p]
-    user32.GetClipboardData.argtypes = [ctypes.c_uint]
-    user32.GetClipboardData.restype = ctypes.c_void_p
-    user32.SetClipboardData.argtypes = [ctypes.c_uint, ctypes.c_void_p]
-    user32.SetClipboardData.restype = ctypes.c_void_p
-    backup = []
+    """Replace the clipboard with the exact script text before pasting."""
+    element.click()
     win32clipboard.OpenClipboard()
     try:
-        fmt = 0
-        while True:
-            fmt = win32clipboard.EnumClipboardFormats(fmt)
-            if not fmt:
-                break
-            # GDI and metafile handles are not global memory and cannot be copied safely here.
-            if fmt in (2, 3, 9, 14):
-                raise RuntimeError('剪貼簿包含圖片或其他無法安全還原的格式；請先複製純文字再執行。')
-            handle = user32.GetClipboardData(fmt)
-            size = kernel.GlobalSize(handle) if handle else 0
-            ptr = kernel.GlobalLock(handle) if size else None
-            if not ptr:
-                raise RuntimeError(f'無法備份剪貼簿格式 {fmt}，已停止貼上。')
-            try:
-                backup.append((fmt, ctypes.string_at(ptr, size)))
-            finally:
-                kernel.GlobalUnlock(handle)
         win32clipboard.EmptyClipboard()
         win32clipboard.SetClipboardText(value, win32clipboard.CF_UNICODETEXT)
     finally:
         win32clipboard.CloseClipboard()
-    try:
-        element.click()
-        element.send_keys(Keys.CONTROL, 'v')
-    finally:
-        win32clipboard.OpenClipboard()
-        try:
-            unchanged = (win32clipboard.IsClipboardFormatAvailable(win32clipboard.CF_UNICODETEXT) and
-                         win32clipboard.GetClipboardData(win32clipboard.CF_UNICODETEXT) == value)
-            if unchanged:
-                win32clipboard.EmptyClipboard()
-                for fmt, data in backup:
-                    handle = kernel.GlobalAlloc(2, len(data))
-                    if not handle:
-                        raise RuntimeError('還原剪貼簿時記憶體不足。')
-                    ptr = kernel.GlobalLock(handle)
-                    if not ptr:
-                        kernel.GlobalFree(handle)
-                        raise RuntimeError('無法還原剪貼簿。')
-                    ctypes.memmove(ptr, data, len(data))
-                    kernel.GlobalUnlock(handle)
-                    if not user32.SetClipboardData(fmt, handle):
-                        kernel.GlobalFree(handle)
-                        raise RuntimeError(f'無法還原剪貼簿格式 {fmt}。')
-        finally:
-            win32clipboard.CloseClipboard()
+    element.send_keys(Keys.CONTROL, 'v')
 
 
 def click_list(driver, label):

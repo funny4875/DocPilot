@@ -3,18 +3,24 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, ttk, simpledialog
 import json
+import re
 import time
 import enterFirstDoc
 import script_engine
 
 import cloudop_login
+from app_paths import RESOURCE_DIR
 from credential_store import load_accounts, migrate_plaintext, save_accounts
+
+
+BUILTIN_SCRIPTS = ("公告週知_要輸入pin", "公告週知", "送歸存檔_要輸入pin", "送歸存檔", "自動會辦_要輸入pin", "自動會辦")
 
 
 class App:
     def __init__(self, root):
         self.root = root
         self.root.title("公文小幫手：帳號登入")
+        self.root.iconbitmap(str(RESOURCE_DIR / "assets" / "docpilot.ico"))
         self.root.resizable(False, False)
         self.driver = None
         self.pin_entered = tk.BooleanVar(value=False)
@@ -129,20 +135,32 @@ class App:
         if self.busy or name not in self.accounts:
             self.status.set("請先選擇已儲存的帳號。")
             return
-        if self.driver:
-            self.status.set("目前已有登入的瀏覽器；請先關閉程式再重新登入。")
-            return
+        previous_driver = self.driver
+        self.driver = None
+        self.pin_entered.set(False)
         self.busy = True
         self.update_buttons()
-        self.status.set(f"正在登入 {name}，請稍候……")
-        threading.Thread(target=self.login_worker, args=(name, self.accounts[name]), daemon=True).start()
+        self.status.set(f"正在關閉原瀏覽器並登入 {name}，請稍候……" if previous_driver else f"正在登入 {name}，請稍候……")
+        threading.Thread(target=self.login_worker, args=(name, self.accounts[name], previous_driver), daemon=True).start()
 
-    def login_worker(self, name, password):
+    def login_worker(self, name, password, previous_driver=None):
         try:
+            if previous_driver is not None:
+                try:
+                    previous_driver.quit()
+                except Exception as exc:
+                    self.root.after(0, self.close_driver_failed, previous_driver, str(exc))
+                    return
             driver = cloudop_login.login((name, password), allow_local_network=True)
             self.root.after(0, self.login_success, name, driver)
         except Exception as exc:
             self.root.after(0, self.login_failed, str(exc))
+
+    def close_driver_failed(self, driver, error):
+        self.driver = driver
+        self.busy = False
+        self.status.set(f"無法關閉原瀏覽器，未開始新登入：{error}")
+        self.update_buttons()
 
     def login_success(self, name, driver):
         self.driver = driver
@@ -219,8 +237,7 @@ class App:
             count = int(self.counts[name].get())
             if count < 1:
                 raise ValueError("次數必須是大於零的整數。")
-            track_pin = name in ("公告週知", "自動會辦")
-            use_first = not track_pin or not self.pin_entered.get()
+            use_first = not self.pin_entered.get()
             first = (script_engine.FOLDER / (name + "_要輸入pin.script")).read_text(encoding="utf-8-sig") if use_first else None
             remaining = count - (1 if use_first else 0)
             later = (script_engine.FOLDER / (name + ".script")).read_text(encoding="utf-8-sig") if remaining else None
@@ -236,8 +253,7 @@ class App:
         def run_sequence():
             if first is not None:
                 script_engine.run_script(self.driver, first, 1, pin, progress=self.progress)
-                if track_pin:
-                    self.root.after(0, self.pin_entered.set, True)
+                self.root.after(0, self.pin_entered.set, True)
             if later is not None:
                 script_engine.run_script(self.driver, later, remaining, pin, progress=self.progress, start_cycle=2 if use_first else 1)
         self.work(name, run_sequence)
@@ -248,9 +264,12 @@ class App:
             return
         self.editor = tk.Toplevel(self.root)
         self.editor.title("腳本編輯／錄製")
-        self.script_name = ttk.Combobox(self.editor, values=["公告週知_要輸入pin", "公告週知", "送歸存檔_要輸入pin", "送歸存檔", "自動會辦_要輸入pin", "自動會辦"], state="readonly")
+        self.script_name = ttk.Combobox(self.editor, values=BUILTIN_SCRIPTS, state="readonly")
         self.script_name.set("公告週知_要輸入pin")
         self.script_name.pack(fill="x", padx=8, pady=5)
+        self.script_name.bind("<<ComboboxSelected>>", self.change_script)
+        self.loaded_name = self.script_name.get()
+        self.saved_content = ""
         text_frame = ttk.Frame(self.editor)
         text_frame.pack(fill="both", expand=True, padx=8)
         self.line_numbers = tk.Canvas(text_frame, width=48, highlightthickness=0, background="#eeeeee")
@@ -275,13 +294,14 @@ class App:
         buttons = ttk.Frame(self.editor)
         buttons.pack(fill="x", padx=8, pady=8)
         self.editor_buttons = {}
-        for label, command in [("載入", self.load_script), ("儲存", self.save_script),
+        for label, command in [("新增腳本", self.new_script), ("刪除腳本", self.delete_script), ("載入", self.reload_script), ("儲存", self.save_script),
                                ("執行一次", self.run_editor), ("開始錄製", self.record_start),
                                ("暫停錄製", self.record_pause), ("停止錄製", self.record_end)]:
             button = ttk.Button(buttons, text=label, command=command)
             button.pack(side="left", padx=3)
             self.editor_buttons[label] = button
         self.editor.protocol("WM_DELETE_WINDOW", self.close_editor)
+        self.refresh_scripts()
         self.load_script()
         self.update_buttons()
         self.editor.after_idle(self.draw_lines)
@@ -289,15 +309,16 @@ class App:
     def update_buttons(self):
         def enabled(widget, value):
             widget.state(["!disabled" if value else "disabled"])
-        enabled(self.login_button, not self.busy and self.driver is None)
+        enabled(self.login_button, not self.busy)
         for widget in (self.save_button, self.delete_button, self.account, self.password, self.choice):
             enabled(widget, not self.busy)
         for button in self.action_buttons:
             enabled(button, not self.busy and self.driver is not None)
         enabled(self.pin_checkbox, not self.busy and self.driver is not None)
         if self.editor and self.editor.winfo_exists():
-            for label in ("載入", "儲存"):
+            for label in ("新增腳本", "載入", "儲存"):
                 enabled(self.editor_buttons[label], not self.busy)
+            enabled(self.editor_buttons["刪除腳本"], not self.busy and self.loaded_name.casefold() not in {n.casefold() for n in BUILTIN_SCRIPTS})
             enabled(self.editor_buttons["執行一次"], not self.busy and self.driver is not None)
             enabled(self.editor_buttons["開始錄製"], not self.busy and self.driver is not None)
             enabled(self.editor_buttons["暫停錄製"], self.record_state in ("recording", "paused"))
@@ -358,25 +379,122 @@ class App:
         self.script_text.insert(line + ".0", json.dumps({"name": step.get("name", ""), **step}, ensure_ascii=False))
         self.script_text.mark_set("insert", line + ".0")
 
+    def refresh_scripts(self):
+        fixed = {name.casefold() for name in BUILTIN_SCRIPTS}
+        custom = sorted((p.stem for p in script_engine.FOLDER.glob("*.script")
+                         if p.is_file() and not p.is_symlink() and p.stem.casefold() not in fixed), key=str.casefold)
+        self.script_name["values"] = list(BUILTIN_SCRIPTS) + custom
+
+    def confirm_discard(self):
+        if self.script_text.get("1.0", "end-1c") == self.saved_content:
+            return True
+        answer = messagebox.askyesnocancel("尚未儲存", f"{self.loaded_name} 有未儲存的修改，要先儲存嗎？", parent=self.editor)
+        if answer is None:
+            return False
+        return self.save_script() if answer else True
+
+    def change_script(self, event=None):
+        selected = self.script_name.get()
+        if selected == self.loaded_name:
+            return
+        if not self.confirm_discard():
+            self.script_name.set(self.loaded_name)
+            return
+        previous = self.loaded_name
+        self.loaded_name = selected
+        if not self.load_script():
+            self.loaded_name = previous
+            self.script_name.set(previous)
+        self.update_buttons()
+
+    def reload_script(self):
+        if self.confirm_discard():
+            self.load_script()
+
     def load_script(self):
-        path = script_engine.FOLDER / (self.script_name.get() + ".script")
+        path = script_engine.FOLDER / (self.loaded_name + ".script")
+        try:
+            content = path.read_text(encoding="utf-8-sig") if path.exists() else ""
+        except (OSError, UnicodeError) as exc:
+            messagebox.showerror("載入失敗", str(exc), parent=self.editor)
+            return False
+        lines = content.splitlines(keepends=True)
         self.script_text.delete("1.0", tk.END)
-        if path.exists():
-            lines = path.read_text(encoding="utf-8-sig").splitlines(keepends=True)
-            for line in lines:
-                try:
-                    step = json.loads(line)
-                    if isinstance(step, dict) and "action" in step:
-                        ending = "\n" if line.endswith("\n") else ""
-                        line = json.dumps({"name": step.get("name", ""), **step}, ensure_ascii=False) + ending
-                except (ValueError, TypeError):
-                    pass
-                self.script_text.insert(tk.END, line)
+        for line in lines:
+            try:
+                step = json.loads(line)
+                if isinstance(step, dict) and "action" in step:
+                    ending = "\n" if line.endswith("\n") else ""
+                    line = json.dumps({"name": step.get("name", ""), **step}, ensure_ascii=False) + ending
+            except (ValueError, TypeError):
+                pass
+            self.script_text.insert(tk.END, line)
+        self.saved_content = self.script_text.get("1.0", "end-1c")
+        return True
 
     def save_script(self):
-        path = script_engine.FOLDER / (self.script_name.get() + ".script")
-        path.write_text(self.script_text.get("1.0", "end-1c"), encoding="utf-8")
+        path = script_engine.FOLDER / (self.loaded_name + ".script")
+        try:
+            content = self.script_text.get("1.0", "end-1c")
+            path.write_text(content, encoding="utf-8")
+        except OSError as exc:
+            messagebox.showerror("儲存失敗", str(exc), parent=self.editor)
+            return False
+        self.saved_content = content
         self.status.set(f"已儲存 {path.name}")
+        return True
+
+    def new_script(self):
+        name = simpledialog.askstring("新增腳本", "請輸入腳本名稱（不必加 .script）：", parent=self.editor)
+        if name is None:
+            return
+        name = name.strip()
+        if name.lower().endswith(".script"):
+            name = name[:-7].strip()
+        if (not name or name.endswith(".") or re.search(r'[<>:"/\\|?*\x00-\x1f]', name)
+                or re.fullmatch(r'(?i)(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\..*)?', name)):
+            messagebox.showerror("名稱無效", "請輸入有效的檔案名稱，不可包含路徑或 Windows 保留字。", parent=self.editor)
+            return
+        if name.casefold() in {n.casefold() for n in BUILTIN_SCRIPTS}:
+            messagebox.showerror("名稱重複", "此名稱為固有腳本，請使用其他名稱。", parent=self.editor)
+            return
+        if not self.confirm_discard():
+            return
+        path = script_engine.FOLDER / (name + ".script")
+        try:
+            with path.open("x", encoding="utf-8"):
+                pass
+        except OSError as exc:
+            messagebox.showerror("新增失敗", str(exc), parent=self.editor)
+            return
+        self.refresh_scripts()
+        self.loaded_name = name
+        self.script_name.set(name)
+        self.load_script()
+        self.update_buttons()
+        self.status.set(f"已新增 {path.name}")
+
+    def delete_script(self):
+        name = self.loaded_name
+        if name.casefold() in {n.casefold() for n in BUILTIN_SCRIPTS}:
+            return
+        path = script_engine.FOLDER / (name + ".script")
+        if path.is_symlink() or not path.is_file():
+            messagebox.showerror("刪除失敗", "找不到可刪除的腳本檔案。", parent=self.editor)
+            return
+        if not messagebox.askyesno("刪除腳本", f"確定刪除 {path.name}？未儲存的內容也會消失。", parent=self.editor):
+            return
+        try:
+            path.unlink()
+        except OSError as exc:
+            messagebox.showerror("刪除失敗", str(exc), parent=self.editor)
+            return
+        self.loaded_name = BUILTIN_SCRIPTS[0]
+        self.script_name.set(self.loaded_name)
+        self.refresh_scripts()
+        self.load_script()
+        self.update_buttons()
+        self.status.set(f"已刪除 {path.name}")
 
     def run_editor(self):
         self.run_content("編輯器腳本", self.script_text.get("1.0", "end-1c"), 1)
@@ -460,12 +578,16 @@ class App:
         if self.busy:
             messagebox.showinfo("執行中", "請先停止錄製或等待腳本執行完成。")
             return
+        if not self.confirm_discard():
+            return
         self.editor.destroy()
         self.editor = None
 
     def close(self):
         if self.busy:
             messagebox.showinfo("登入中", "請等待登入結果後再關閉。")
+            return
+        if self.editor and self.editor.winfo_exists() and not self.confirm_discard():
             return
         if self.driver:
             self.driver.quit()

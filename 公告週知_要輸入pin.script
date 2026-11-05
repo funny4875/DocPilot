@@ -1,0 +1,23 @@
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[3]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/header[1]/div[2]/div[1]/button[1]/span[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/header[1]/div[2]/div[1]/div[1]/a[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/table[1]/tbody[1]/tr[2]/td[3]/div[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[2]/button[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[1]/div[1]/div[4]/div[1]/div[2]/div[1]/div[2]", "timeout": 5}
+{"name": "", "action": "paste", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[1]/div[1]/div[4]/div[1]/div[2]/div[1]/div[2]", "value": "擬公告週知。", "timeout": 5}
+{"name": "", "action": "click", "xpath": "//*[@id=\"檔號\"]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[2]/table[1]/tbody[1]/tr[3]/td[2]/div[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[3]/button[1]", "timeout": 5}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[3]/div[1]/div[1]/div[2]/div[2]/div[2]/button[2]", "timeout": 5}
+{"name": "流程範本", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[1]/button[1]", "timeout": 5}
+{"name": "選取", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/table[1]/tbody[1]/tr[1]/td[3]/button[1]", "timeout": 5}
+{"name": "等待 2 秒", "action": "wait", "seconds": 2}
+{"name": "送出", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/button[1]", "timeout": 10}
+{"name": "等待 0.1 秒", "action": "wait", "seconds": 0.1}
+{"name": "輸入pin", "action": "clear", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "timeout": 10}
+{"name": "", "action": "send_keys", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "${PIN}", "timeout": 5}
+{"name": "", "action": "key", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "ENTER", "timeout": 5}
+{"name": "等待 2 秒", "action": "wait", "seconds": 2}
+{"name": "next", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[3]/button[3]", "timeout": 10}
+{"name": "", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[2]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[2]/span[116]", "timeout": 10}
+{"name": "等待 2 秒", "action": "wait", "seconds": 2}

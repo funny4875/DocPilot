@@ -10,3 +10,8 @@ cloudop_captcha*.png
 cloudop_login_screenshot*.png
 *.bak*
 backup-*/
+
+/build/
+/dist/
+/release/
+*.wixpdb

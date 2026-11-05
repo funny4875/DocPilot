@@ -9,13 +9,17 @@ from pathlib import Path
 import ddddocr
 ocr_engine = ddddocr.DdddOcr(show_ad=False)
 from selenium import webdriver
-from selenium.common.exceptions import NoAlertPresentException, UnexpectedAlertPresentException
+from selenium.common.exceptions import (
+    NoAlertPresentException, UnexpectedAlertPresentException,
+    StaleElementReferenceException, ElementClickInterceptedException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
 LOGIN_URL = "https://www.cloudop.tw/CLOUDWEBAP/"
-APP_DIR = Path(__file__).resolve().parent
+from app_paths import DATA_DIR
+APP_DIR = DATA_DIR
 CAPTCHA_PATH = APP_DIR / "cloudop_captcha.png"
 FULL_SCREENSHOT_PATH = APP_DIR / "cloudop_login_screenshot.png"
 CAPTCHA_LAST_PATH = APP_DIR / "cloudop_captcha_last.png"
@@ -63,6 +67,50 @@ def replace_text(element, value):
     element.click()
     element.send_keys(Keys.CONTROL, "a")
     element.send_keys(value)
+
+
+def close_startup_notices(driver, timeout=5):
+    """登入前短暫輪詢公告；只點訊息框內的關閉／確定按鈕。
+
+    不在提交登入後呼叫，避免吃掉帳密或驗證碼錯誤提示。
+    """
+    containers = (
+        '//*[@role="dialog" or @role="alertdialog" '
+        'or contains(concat(" ", normalize-space(@class), " "), " modal ") '
+        'or contains(concat(" ", normalize-space(@class), " "), " ui-dialog ") '
+        'or contains(concat(" ", normalize-space(@class), " "), " bootbox ") '
+        'or contains(concat(" ", normalize-space(@class), " "), " jconfirm-box ") '
+        'or contains(concat(" ", normalize-space(@class), " "), " swal2-popup ") '
+        'or contains(concat(" ", normalize-space(@class), " "), " sweet-alert ")]'
+    )
+    close_buttons = containers + '//*[(self::button or self::a or self::input or @role="button") and (' \
+        '@data-dismiss="modal" or @data-bs-dismiss="modal" or ' \
+        '@aria-label="Close" or @aria-label="關閉" or @title="關閉" or ' \
+        'contains(concat(" ", normalize-space(@class), " "), " ui-dialog-titlebar-close ") or ' \
+        'normalize-space(.)="關閉" or normalize-space(.)="確定" or ' \
+        'normalize-space(.)="知道了" or normalize-space(.)="我知道了" or ' \
+        'normalize-space(.)="×" or @value="關閉" or @value="確定")]'
+    deadline = time.monotonic() + timeout
+    count = 0
+    while time.monotonic() < deadline:
+        try:
+            try:
+                # 啟動階段的原生訊息框以 dismiss 關閉，避免同意確認操作。
+                driver.switch_to.alert.dismiss()
+                count += 1
+            except NoAlertPresentException:
+                button = first_visible(driver, (close_buttons,))
+                if button is not None:
+                    button.click()
+                    count += 1
+        except (UnexpectedAlertPresentException, StaleElementReferenceException,
+                ElementClickInterceptedException):
+            # 多層公告或動畫期間重新定位，不強制穿透遮罩點擊。
+            pass
+        time.sleep(0.2)
+    if count:
+        log(f"已自動關閉 {count} 個啟動公告／訊息視窗。")
+    return count
 
 
 def locate_fields(driver, image_xpath=None, submit_xpath=None):
@@ -242,6 +290,7 @@ def login(credentials, timeout=20, image_xpath=None, submit_xpath=None, allow_lo
             allow_cloudop_local_network(driver)
             log("已預先允許 CloudOP 的本機網路與 loopback 權限（僅 https://www.cloudop.tw）。")
         driver.get(LOGIN_URL)
+        close_startup_notices(driver)
         if manual_captcha:
             prepare_user_captcha_login(driver, credentials, timeout)
         else:
@@ -260,6 +309,7 @@ def login(credentials, timeout=20, image_xpath=None, submit_xpath=None, allow_lo
                     raise RuntimeError("驗證碼錯誤，已達最多兩次重試。")
                 log(f"驗證碼錯誤，關閉提示後重新載入並辨識（重試 {attempt + 1}/2）。")
                 driver.refresh()
+                close_startup_notices(driver)
         return driver
     except Exception:
         driver.quit()

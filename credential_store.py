@@ -6,7 +6,8 @@ from pathlib import Path
 import win32crypt
 
 
-APP_DIR = Path(__file__).resolve().parent
+from app_paths import DATA_DIR
+APP_DIR = DATA_DIR
 STORE = APP_DIR / "accounts.dpapi"
 OLD_FILES = (APP_DIR / "temp.txt", APP_DIR / "temp - 複製.txt")
 

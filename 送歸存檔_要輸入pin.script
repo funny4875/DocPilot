@@ -1,0 +1,10 @@
+{"name": "簽章", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/main[1]/div[3]/div[1]/div[1]/div[2]/div[2]/div[2]/button[2]/i[1]", "timeout": 5}
+{"name": "等待 0.5 秒", "action": "wait", "seconds": 0.5}
+{"name": "加入", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/div[2]/div[1]/div[1]/button[1]", "timeout": 5}
+{"name": "等待 2 秒", "action": "wait", "seconds": 2}
+{"name": "送出", "action": "click", "xpath": "/html[1]/body[1]/div[1]/div[1]/div[10]/div[1]/div[1]/div[2]/div[1]/div[2]/div[1]/button[1]", "timeout": 5}
+{"name": "", "action": "clear", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "timeout": 5}
+{"name": "輸入pin", "action": "send_keys", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "${PIN}", "timeout": 5}
+{"name": "", "action": "key", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[2]/input[1]", "value": "ENTER", "timeout": 10}
+{"name": "前往下一筆", "action": "click", "xpath": "/html[1]/body[1]/div[2]/div[1]/div[3]/button[3]", "timeout": 15}
+{"name": "等待 1 秒", "action": "wait", "seconds": 1}
