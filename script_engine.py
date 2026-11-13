@@ -5,6 +5,7 @@ import time
 import win32clipboard
 from pathlib import Path
 
+from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -96,7 +97,7 @@ def parse_script(content):
     return steps
 
 
-def run_script(driver, content, count=1, pin=None, timeout=5, progress=None, start_cycle=1):
+def run_script(driver, content, count=1, pin=None, timeout=15, progress=None, start_cycle=1):
     steps = parse_script(content)
     if any(s.get('value') == '${PIN}' for _, s in steps) and pin is None:
         raise ValueError('腳本需要 PIN。')
@@ -109,8 +110,19 @@ def run_script(driver, content, count=1, pin=None, timeout=5, progress=None, sta
                 if action == 'wait':
                     time.sleep(step['seconds'])
                     continue
-                element = WebDriverWait(driver, step.get('timeout', timeout)).until(
-                    lambda d: next((e for e in d.find_elements(By.XPATH, step['xpath']) if e.is_displayed() and e.is_enabled()), False))
+                wait_seconds = step.get('timeout', timeout)
+                def find_ready(d):
+                    for element in d.find_elements(By.XPATH, step['xpath']):
+                        try:
+                            if element.is_displayed() and element.is_enabled():
+                                return element
+                        except StaleElementReferenceException:
+                            continue
+                    return False
+                try:
+                    element = WebDriverWait(driver, wait_seconds).until(find_ready)
+                except TimeoutException as exc:
+                    raise TimeoutError(f'等待元件逾時（{wait_seconds} 秒），XPath：{step["xpath"]}') from exc
                 if action == 'wait_for': continue
                 if action == 'click': element.click()
                 elif action == 'clear': element.clear()

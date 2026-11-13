@@ -6,7 +6,11 @@ from pathlib import Path
 
 RESOURCE_DIR = Path(__file__).resolve().parent
 if getattr(sys, "frozen", False):
-    DATA_DIR = Path(os.environ["LOCALAPPDATA"]) / "DocPilot"
+    executable = Path(sys.executable).resolve()
+    if executable.name.casefold() == "docpilot-portable.exe":
+        DATA_DIR = executable.parent
+    else:
+        DATA_DIR = Path(os.environ["LOCALAPPDATA"]) / "DocPilot"
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     for source in RESOURCE_DIR.glob("*.script"):
         target = DATA_DIR / source.name

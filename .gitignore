@@ -15,3 +15,5 @@ backup-*/
 /dist/
 /release/
 *.wixpdb
+
+/DocPilot-Portable.exe

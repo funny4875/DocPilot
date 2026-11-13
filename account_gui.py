@@ -5,6 +5,8 @@ from tkinter import messagebox, ttk, simpledialog
 import json
 import re
 import time
+import webbrowser
+import update_check
 import enterFirstDoc
 import script_engine
 
@@ -81,6 +83,20 @@ class App:
         root.update_idletasks()
         root.geometry(f"+{max(0, root.winfo_screenwidth() - root.winfo_width())}+0")
         root.protocol("WM_DELETE_WINDOW", self.close)
+        threading.Thread(target=self.check_updates, daemon=True).start()
+
+    def check_updates(self):
+        try:
+            latest = update_check.latest_version()
+            if latest:
+                self.root.after(0, self.show_update, latest)
+        except Exception:
+            # Network failures must never prevent startup or interrupt the user.
+            pass
+
+    def show_update(self, latest):
+        if messagebox.askyesno("發現新版本", f"目前版本：{update_check.VERSION}\n最新版本：{latest}\n\n要開啟下載頁面嗎？", parent=self.root):
+            webbrowser.open(update_check.RELEASE_PAGE)
 
     def refresh(self, selected=""):
         self.choice["values"] = sorted(self.accounts)
@@ -295,11 +311,16 @@ class App:
         buttons.pack(fill="x", padx=8, pady=8)
         self.editor_buttons = {}
         for label, command in [("新增腳本", self.new_script), ("刪除腳本", self.delete_script), ("載入", self.reload_script), ("儲存", self.save_script),
-                               ("執行一次", self.run_editor), ("開始錄製", self.record_start),
+                               ("執行", self.run_editor), ("開始錄製", self.record_start),
                                ("暫停錄製", self.record_pause), ("停止錄製", self.record_end)]:
             button = ttk.Button(buttons, text=label, command=command)
             button.pack(side="left", padx=3)
             self.editor_buttons[label] = button
+            if label == "執行":
+                self.editor_count = ttk.Entry(buttons, width=5)
+                self.editor_count.insert(0, "1")
+                self.editor_count.pack(side="left", padx=(2, 0))
+                ttk.Label(buttons, text="次").pack(side="left")
         self.editor.protocol("WM_DELETE_WINDOW", self.close_editor)
         self.refresh_scripts()
         self.load_script()
@@ -319,7 +340,7 @@ class App:
             for label in ("新增腳本", "載入", "儲存"):
                 enabled(self.editor_buttons[label], not self.busy)
             enabled(self.editor_buttons["刪除腳本"], not self.busy and self.loaded_name.casefold() not in {n.casefold() for n in BUILTIN_SCRIPTS})
-            enabled(self.editor_buttons["執行一次"], not self.busy and self.driver is not None)
+            enabled(self.editor_buttons["執行"], not self.busy and self.driver is not None)
             enabled(self.editor_buttons["開始錄製"], not self.busy and self.driver is not None)
             enabled(self.editor_buttons["暫停錄製"], self.record_state in ("recording", "paused"))
             enabled(self.editor_buttons["停止錄製"], self.record_state in ("recording", "paused"))
@@ -497,7 +518,14 @@ class App:
         self.status.set(f"已刪除 {path.name}")
 
     def run_editor(self):
-        self.run_content("編輯器腳本", self.script_text.get("1.0", "end-1c"), 1)
+        try:
+            count = int(self.editor_count.get())
+            if count < 1:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("無法執行", "次數必須是大於零的整數。", parent=self.editor)
+            return
+        self.run_content("編輯器腳本", self.script_text.get("1.0", "end-1c"), count)
 
     def record_start(self):
         self.record_stop.clear()
@@ -561,7 +589,7 @@ class App:
             for action in actions:
                 action.setdefault("name", "")
                 if action.get("xpath"):
-                    action.setdefault("timeout", 5)
+                    action.setdefault("timeout", 15)
                 self.script_text.insert("end-1c", json.dumps({"name": action.get("name", ""), **action}, ensure_ascii=False) + "\n")
             if at_bottom:
                 self.script_text.see(tk.END)
