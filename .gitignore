@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 accounts.dpapi
 accounts.dpapi.*
+accounts.tmp
 pin.txt
 temp.txt
 temp - 複製.txt
